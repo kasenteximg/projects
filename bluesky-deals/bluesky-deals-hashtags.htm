@@ -491,15 +491,25 @@ Visit: *short URL (only from marketplace websites)
         // Map the search results to match the expected format for the rest of the script
         const feedItems = data.posts.map(post => ({ post }));
 
+        const allowedDomains = [
+          'amazon.com', 'a.co', 'amzn.to',
+          'walmart.com', 'goto.walmart.com',
+          'temu.com', 'temu.to',
+          'tiktok.com/shop', 'tiktok.com', 'vt.tiktok.com'
+        ];
+
         allFilteredPosts = feedItems.filter(item => {
           const text = item.post.record.text || "";
+          const lowerText = text.toLowerCase();
+          const externalUri = item.post.embed?.external?.uri?.toLowerCase() || "";
 
           return (
             text.includes("Item:") &&
             text.includes("Price:") &&
             text.includes("Brand:") &&
             text.includes("Shop:") &&
-            text.includes("Visit:")
+            text.includes("Visit:") &&
+            allowedDomains.some(domain => lowerText.includes(domain) || externalUri.includes(domain))
           );
         });
 
@@ -556,7 +566,7 @@ Visit: *short URL (only from marketplace websites)
       const message = document.getElementById("message");
 
       results.innerHTML = "";
-      message.innerText = `Curated from #skyshop posts - ${posts.length} items`;
+      message.innerText = `Curated from #skyshop posts - ${posts.length} items for you`;
       message.style.color = "#555"; // Reset color after successful render
 
       posts.forEach(item => {

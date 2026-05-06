@@ -1,0 +1,13 @@
+<svg width="500" height="500" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Subtle shadow at the base -->
+  <ellipse cx="50" cy="85" rx="35" ry="5" fill="#f4f4f4" />
+  <!-- Main bag body -->
+  <path d="M35 45 L65 45 Q68 45 68 48 L73 80 Q73 85 68 85 L32 85 Q27 85 27 80 L32 48 Q32 45 35 45 Z" fill="white" stroke="#1a1a1a" stroke-width="2.5" />
+  <!-- Side perspective panel -->
+  <path d="M65 45 L73 48 L78 82 L73 85" fill="none" stroke="#1a1a1a" stroke-width="2.5" stroke-linejoin="round" />
+  <!-- Bag handle -->
+  <path d="M42 45 C 42 28, 58 28, 58 45" fill="none" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round" />
+  <!-- Handle attachment rings -->
+  <circle cx="42" cy="48" r="2.5" fill="white" stroke="#1a1a1a" stroke-width="1.5" />
+  <circle cx="58" cy="48" r="2.5" fill="white" stroke="#1a1a1a" stroke-width="1.5" />
+</svg>

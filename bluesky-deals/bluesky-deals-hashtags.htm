@@ -310,7 +310,7 @@
 
       <div id="discover" class="tab-content active">
         <div class="controls">
-          <button onclick="loadPosts()" style="width: 100%;">Refresh #skyshop Feed</button>
+          <button onclick="loadPosts()" style="width: 100%;">Show New Deals #skyshop</button>
         </div>
 
         <div id="message" style="padding: 15px 15px 0 15px;"></div>
@@ -336,7 +336,7 @@ Brand: *brand name
 Shop: *website name, Amazon, Walmart, etc
 Visit: *short URL (only from marketplace websites)
 
-*images can be included. only one category per post.
+*images can be included. only one category per post. emojis are automatically added.
 </pre>
 
           <h3>List of Categories</h3>
@@ -396,7 +396,7 @@ Visit: *short URL (only from marketplace websites)
       </div>
 
       <div class="placeholder-box">
-         We help you discover the latest product deals and items shared on Bluesky, all organized in a consistent and easy-to-browse format. We don't track you or sell your shopping data. *Some items may be affiliate ads from creators. <b style="color:#ff3176">More features to come!</b>
+         We help you discover the latest product deals and items shared on Bluesky, all organized in a consistent and easy-to-browse format. We don't track you or sell your shopping data. <b>*Some items may be affiliate ads from creators.</b> <b style="color:#ff3176">More features to come!</b>
       </div>
     </aside>
 
@@ -556,7 +556,7 @@ Visit: *short URL (only from marketplace websites)
       const message = document.getElementById("message");
 
       results.innerHTML = "";
-      message.innerText = `Showing ${posts.length} matching posts.`;
+      message.innerText = `Curated from #skyshop posts - ${posts.length} items`;
       message.style.color = "#555"; // Reset color after successful render
 
       posts.forEach(item => {

@@ -568,9 +568,11 @@ Visit: *short URL (only from marketplace websites)
             <div class="text">${linkify(text)}</div>
         `;
 
+        const externalLink = post.embed?.external?.uri;
+
         if (post.embed && post.embed.images) {
           post.embed.images.forEach(img => {
-            html += `<img src="${img.fullsize}" alt="Post image">`;
+            html += externalLink ? `<a href="${externalLink}" target="_blank"><img src="${img.fullsize}" alt="Post image"></a>` : `<img src="${img.fullsize}" alt="Post image">`;
           });
         }
 
@@ -579,7 +581,7 @@ Visit: *short URL (only from marketplace websites)
 
           html += `
             <div class="link-card">
-              ${ext.thumb ? `<img src="${ext.thumb}" alt="Link preview image">` : ""}
+              ${ext.thumb ? `<a href="${ext.uri}" target="_blank"><img src="${ext.thumb}" alt="Link preview image"></a>` : ""}
               <div class="link-card-content">
                 <div class="link-card-title">${escapeHtml(ext.title || "")}</div>
                 <div class="link-card-desc">${escapeHtml(ext.description || "")}</div>

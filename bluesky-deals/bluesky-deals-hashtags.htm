@@ -172,6 +172,14 @@
     .author {
       font-weight: bold;
       margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    .author-handle, .timestamp {
+      color: #64748b;
+      font-weight: normal;
+      font-size: 14px;
+      margin-left: 4px;
     }
 
     .text {
@@ -556,6 +564,7 @@ Visit: *short URL (only from marketplace websites)
         const text = post.record.text || "";
         const author = post.author.displayName || post.author.handle || "Unknown";
         const handle = post.author.handle || "";
+        const createdAt = post.record.createdAt ? formatRelativeTime(post.record.createdAt) : "";
 
         let html = `
           <div class="post">
@@ -564,6 +573,7 @@ Visit: *short URL (only from marketplace websites)
               <div class="author">
                 <span class="author-name">${escapeHtml(author)}</span>
                 <span class="author-handle">@${escapeHtml(handle)}</span>
+                <span class="timestamp">· ${createdAt}</span>
               </div>
             <div class="text">${linkify(text)}</div>
         `;
@@ -594,6 +604,34 @@ Visit: *short URL (only from marketplace websites)
         html += `</div></div>`;
         results.innerHTML += html;
       });
+    }
+
+    function formatRelativeTime(dateString) {
+      const postDate = new Date(dateString);
+      const now = new Date();
+      const seconds = Math.floor((now - postDate) / 1000);
+
+      if (seconds < 60) {
+        return seconds === 0 ? "now" : `${seconds}s`;
+      }
+
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) {
+        return `${minutes}m`;
+      }
+
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) {
+        return `${hours}h`;
+      }
+
+      const days = Math.floor(hours / 24);
+      if (days < 30) { // Roughly 30 days in a month
+        return `${days}d`;
+      }
+
+      const months = Math.floor(days / 30);
+      return `${months}mo`;
     }
 
     function linkify(text) {

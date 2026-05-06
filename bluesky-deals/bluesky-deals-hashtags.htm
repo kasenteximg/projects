@@ -600,6 +600,9 @@ Visit: *short URL (only from marketplace websites)
         "Visit:": "🔗 Visit:"
       };
 
+      // Add a line break before "Price:" if it's not already preceded by one
+      processedText = processedText.replace(/(?<!\n)(Price:)/g, '<br>$1');
+
       processedText = processedText.replace(/\b(Item:|Price:|Brand:|Shop:|Visit:)/g, (match) => `<b>${emojiMap[match]}</b>`);
 
       const urlPattern = /((?:https?:\/\/|www\.)[^\s<]+)|(\b[a-z0-9-]+\.(?:com|co|to|us|io|net|org|sh)\/[^\s<]+)/gi;

@@ -503,13 +503,21 @@ Visit: *short URL (only from marketplace websites)
           const lowerText = text.toLowerCase();
           const externalUri = item.post.embed?.external?.uri?.toLowerCase() || "";
 
+          // Check for official Bluesky content labels (adult content)
+          const labels = item.post.labels || [];
+          const isAdult = labels.some(l => 
+            ['porn', 'sexual', 'nudity', 'nsfw'].includes(l.val.toLowerCase()) || 
+            l.val.startsWith('!')
+          );
+
           return (
             text.includes("Item:") &&
             text.includes("Price:") &&
             text.includes("Brand:") &&
             text.includes("Shop:") &&
             text.includes("Visit:") &&
-            allowedDomains.some(domain => lowerText.includes(domain) || externalUri.includes(domain))
+            allowedDomains.some(domain => lowerText.includes(domain) || externalUri.includes(domain)) &&
+            !isAdult
           );
         });
 

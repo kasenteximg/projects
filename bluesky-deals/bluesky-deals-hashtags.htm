@@ -506,7 +506,7 @@ Visit: *short URL (only from marketplace websites)
           // Check for official Bluesky content labels (adult content)
           const labels = item.post.labels || [];
           const isAdult = labels.some(l => 
-            ['porn', 'sexual', 'nudity', 'nsfw'].includes(l.val.toLowerCase()) || 
+            ['porn', 'sexual', 'nudity', 'nsfw', 'graphic-media', 'gore'].includes(l.val.toLowerCase()) || 
             l.val.startsWith('!')
           );
 

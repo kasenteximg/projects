@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Bluesky Product Feed</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #ffffff;
+      margin: 0;
+      color: #0b0f14;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 240px 600px 1fr;
+      gap: 0;
+      max-width: 1150px;
+      margin: 0 auto;
+    }
+
+    .sidebar, .rightbar {
+      padding: 20px;
+    }
+
+    .main {
+      background: white;
+      border-left: 1px solid #e5e7eb;
+      border-right: 1px solid #e5e7eb;
+      min-height: 100vh;
+    }
+
+    .sidebar, .rightbar {
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+
+    h1 {
+      font-size: 20px;
+      padding: 15px;
+      margin: 0;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      z-index: 10;
+    }
+
+    .menu-item {
+      padding: 12px 15px;
+      border-radius: 9999px;
+      margin-bottom: 5px;
+      font-size: 19px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .menu-item:hover {
+      background: #f7f7f7;
+    }
+
+    .menu-item svg {
+      width: 24px;
+      height: 24px;
+      margin-right: 12px;
+      vertical-align: middle;
+    }
+
+    /* Tabs styling */
+    .tabs-header {
+      display: flex;
+      border-bottom: 1px solid #e5e7eb;
+      position: sticky;
+      top: 0;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      z-index: 10;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 15px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      color: #64748b;
+      border-bottom: 3px solid transparent;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: #f1f5f9;
+    }
+
+    .tab-btn.active {
+      color: #ff3176;
+      border-bottom-color: #ff3176;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .about-pane {
+      padding: 20px;
+      line-height: 1.6;
+      color: #4b5563;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      padding: 15px;
+      border-bottom: 1px solid #e5e7eb;
+      background: #f8fafc;
+    }
+
+    input, select {
+      padding: 10px;
+      font-size: 15px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      margin-top: 6px;
+      width: 100%;
+      box-sizing: border-box;
+      background: #ffffff;
+    }
+
+    .controls input {
+      flex: 1;
+      margin-top: 0;
+    }
+
+    button {
+      padding: 12px 18px;
+      background: #ff3176;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    #message {
+      margin-bottom: 15px;
+      color: #555;
+      display: none;
+    }
+
+    #results {
+      max-height: 750px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .post {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 0px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      background: #fff;
+      transform: scale(0.95);
+    }
+
+    .author {
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .text {
+      white-space: pre-line;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    .post img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+
+    .link-card {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 12px;
+      background: #fafafa;
+    }
+
+    .link-card-content {
+      padding: 12px;
+    }
+
+    .link-card-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .link-card-desc {
+      color: #555;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .link-card a {
+      color: #0085ff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .placeholder-box {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+    }
+
+    .rightbar h2 {
+      font-size: 16px;
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 12px;
+      display: block;
+    }
+
+    .filter-options-list {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .filter-chip {
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      border: 1px solid #d1d5db;
+      background: white;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .filter-chip:hover {
+      background: #f8fafc;
+      border-color: #ff3176;
+    }
+
+    .filter-chip.active {
+      background: #ff3176;
+      color: white;
+      border-color: #ff3176;
+      font-weight: bold;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar, .rightbar {
+        position: static;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="layout">
+
+    <aside class="sidebar">
+      <div class="menu-item" onclick="switchTab('discover')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+        Home
+      </div>
+      <div class="menu-item" onclick="switchTab('about')">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        About
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="tabs-header">
+        <div class="tab-btn active" onclick="switchTab('discover')">Discover</div>
+        <div class="tab-btn" onclick="switchTab('about')">About</div>
+      </div>
+
+      <div id="discover" class="tab-content active">
+        <div class="controls">
+          <button onclick="loadPosts()" style="width: 100%;">Refresh #skyshop Feed</button>
+        </div>
+
+        <div id="message" style="padding: 15px 15px 0 15px;"></div>
+        <div id="results" style="padding: 15px;"></div>
+      </div>
+
+      <div id="about" class="tab-content">
+        <div class="about-pane">
+          <h2>About Sky Shop</h2>
+          <p>
+            We help you discover the latest product deals and items shared on Bluesky, all organized in a consistent and easy-to-browse format.
+          </p>
+          <p>
+            Anyone can participate by posting products using <b>#skyshop</b>. Influencers, creators, and affiliates are welcome and encouraged to share deals using the format below:
+          </p>
+
+          <pre>
+#skyshop #*category
+
+Item: *name of item, keep it short
+Price: *price with $ sign
+Brand: *brand name
+Shop: *website name, Amazon, Walmart, etc
+Visit: *short URL (only from marketplace websites)
+
+*images can be included. only one category per post.
+</pre>
+
+          <h3>List of Categories</h3>
+          <pre>
+#Home #Electronics #Kitchen #Sports #Outdoors #Women #Men 
+#Health #Beauty #Food #Pets #Other
+</pre>
+
+          <h3>How it works</h3>
+          <ul>
+            <li>All feeds are specifically from #skyshop hashtags</li>
+            <li>We filter for posts containing specific product metadata like <b>Item</b>, <b>Price</b>, and <b>Brand</b>.</li>
+            <li>Use the filters on the right to narrow down your search by website or specific brands.</li>
+          </ul>
+          <p><i>*This is a public tool and does not require a login to browse public feeds. *Some items may be affiliate ads from creators. We don't track you or sell your shopping data.</i></p>
+        </div>
+      </div>
+
+    </main>
+
+    <aside class="rightbar">
+      <h2>Filters</h2>
+
+      <div class="placeholder-box">
+        <label>Shopping Sites</label>
+        <div class="filter-options-list" id="websiteFilterContainer">
+          <div class="filter-chip" onclick="toggleWebsiteFilter(this, 'amazon.com,a.co,amzn.to')">Amazon</div>
+          <div class="filter-chip" onclick="toggleWebsiteFilter(this, 'walmart.com,goto.walmart.com')">Walmart</div>
+          <div class="filter-chip" onclick="toggleWebsiteFilter(this, 'temu.com,temu.to')">Temu</div>
+          <div class="filter-chip" onclick="toggleWebsiteFilter(this, 'tiktok.com/shop,tiktok.com,vt.tiktok.com')">TikTok Shop</div>
+        </div>
+        <input type="hidden" id="websiteFilter" value="">
+      </div>
+
+      <div class="placeholder-box">
+        <label>Category</label>
+        <div class="filter-options-list" id="categoryFilterContainer">
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#home')">#Home</div>
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#electronics')">#Electronics</div>
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#kitchen')">#Kitchen</div>
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#sports')">#Sports</div>
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#outdoors')">#Outdoors</div>
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#women')">#Women</div>
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#men')">#Men</div>
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#health')">#Health</div>
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#beauty')">#Beauty</div>
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#food')">#Food</div>
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#pets')">#Pets</div>
+          <div class="filter-chip" onclick="toggleCategoryFilter(this, '#other')">#Other</div>
+        </div>
+        <input type="hidden" id="categoryFilter" value="">
+      </div>
+
+      <div class="placeholder-box">
+        <label>Brand</label>
+        <input id="brandFilter" placeholder="Example: KASENTEX" oninput="applyFilters()" />
+      </div>
+
+      <div class="placeholder-box">
+         We help you discover the latest product deals and items shared on Bluesky, all organized in a consistent and easy-to-browse format. We don't track you or sell your shopping data. *Some items may be affiliate ads from creators. <b style="color:#ff3176">More features to come!</b>
+      </div>
+    </aside>
+
+  </div>
+
+  <script>
+    let allFilteredPosts = [];
+
+    function switchTab(tabId) {
+      // Update buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText.toLowerCase() === tabId);
+      });
+      
+      // Update content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('active', content.id === tabId);
+      });
+    }
+
+    function toggleWebsiteFilter(el, value) {
+      const hiddenInput = document.getElementById("websiteFilter");
+      const isCurrentlyActive = el.classList.contains("active");
+
+      // Clear active state from all chips in this container
+      document.querySelectorAll('#websiteFilterContainer .filter-chip').forEach(chip => {
+        chip.classList.remove('active');
+      });
+
+      if (!isCurrentlyActive) {
+        el.classList.add('active');
+        hiddenInput.value = value;
+      } else {
+        hiddenInput.value = "";
+      }
+
+      applyFilters();
+    }
+
+    function toggleCategoryFilter(el, value) {
+      const hiddenInput = document.getElementById("categoryFilter");
+      const isCurrentlyActive = el.classList.contains("active");
+
+      // Clear active state from all chips in this container
+      document.querySelectorAll('#categoryFilterContainer .filter-chip').forEach(chip => {
+        chip.classList.remove('active');
+      });
+
+      if (!isCurrentlyActive) {
+        el.classList.add('active');
+        hiddenInput.value = value;
+      } else {
+        hiddenInput.value = "";
+      }
+
+      applyFilters();
+    }
+
+    async function loadPosts() {
+      const results = document.getElementById("results");
+      const message = document.getElementById("message");
+
+      results.innerHTML = "";
+      message.innerText = "Loading posts...";
+      message.style.display = "block";
+
+      try {
+        // Search for posts containing #skyshop, sorted by latest
+        const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=%23skyshop&sort=latest&limit=100`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.posts || data.posts.length === 0) {
+          message.innerText = "No posts found.";
+          return;
+        }
+
+        // Map the search results to match the expected format for the rest of the script
+        const feedItems = data.posts.map(post => ({ post }));
+
+        allFilteredPosts = feedItems.filter(item => {
+          const text = item.post.record.text || "";
+
+          return (
+            text.includes("Item:") &&
+            text.includes("Price:") &&
+            text.includes("Brand:") &&
+            text.includes("Shop:") &&
+            text.includes("Visit:")
+          );
+        });
+
+        applyFilters();
+
+      } catch (error) {
+        console.error("Fetch error:", error);
+        if (error.name === 'TypeError' || error.message.includes("NetworkError") || error.message.includes("Failed to fetch")) {
+          message.innerText = "Connection Error: Browsers block API calls from local files. Please upload to GitHub Pages or use a local server to avoid CORS blocks.";
+        } else {
+          message.innerText = "Error: " + error.message;
+        }
+        message.style.color = "#dc2626";
+      }
+    }
+
+    function applyFilters() {
+      const website = document.getElementById("websiteFilter").value.toLowerCase();
+      const brand = document.getElementById("brandFilter").value.toLowerCase();
+      const category = document.getElementById("categoryFilter").value.toLowerCase();
+
+      const filtered = allFilteredPosts.filter(item => {
+        const text = item.post.record.text || "";
+        const lowerText = text.toLowerCase();
+
+        const matchesWebsite = !website || website.split(',').some(site => lowerText.includes(site.trim()));
+        const matchesBrand = !brand || lowerText.includes("brand: " + brand);
+        const matchesCategory = !category || (lowerText.includes(category) && lowerText.includes("#skyshop"));
+        
+        return matchesWebsite && matchesBrand && matchesCategory;
+      });
+
+      renderPosts(filtered);
+    }
+
+    function renderPosts(posts) {
+      const results = document.getElementById("results");
+      const message = document.getElementById("message");
+
+      results.innerHTML = "";
+      message.innerText = `Showing ${posts.length} matching posts.`;
+
+      posts.forEach(item => {
+        const post = item.post;
+        const text = post.record.text || "";
+        const author = post.author.displayName || post.author.handle || "Unknown";
+        const handle = post.author.handle || "";
+
+        let html = `
+          <div class="post">
+            <div class="avatar-placeholder"></div>
+            <div class="post-content">
+              <div class="author">
+                <span class="author-name">${escapeHtml(author)}</span>
+                <span class="author-handle">@${escapeHtml(handle)}</span>
+              </div>
+            <div class="text">${linkify(text)}</div>
+        `;
+
+        if (post.embed && post.embed.images) {
+          post.embed.images.forEach(img => {
+            html += `<img src="${img.fullsize}" alt="Post image">`;
+          });
+        }
+
+        if (post.embed && post.embed.external) {
+          const ext = post.embed.external;
+
+          html += `
+            <div class="link-card">
+              ${ext.thumb ? `<img src="${ext.thumb}" alt="Link preview image">` : ""}
+              <div class="link-card-content">
+                <div class="link-card-title">${escapeHtml(ext.title || "")}</div>
+                <div class="link-card-desc">${escapeHtml(ext.description || "")}</div>
+                <a href="${ext.uri}" target="_blank">Open Link</a>
+              </div>
+            </div>
+          `;
+        }
+
+        html += `</div></div>`;
+        results.innerHTML += html;
+      });
+    }
+
+    function linkify(text) {
+      if (!text) return "";
+      let processedText = escapeHtml(text);
+
+      // Map labels to emojis and bold them
+      const emojiMap = {
+        "Item:": "🎁 Item:",
+        "Price:": "💰 Price:",
+        "Brand:": "🏷️ Brand:",
+        "Shop:": "🛍️ Shop:",
+        "Visit:": "🔗 Visit:"
+      };
+
+      processedText = processedText.replace(/\b(Item:|Price:|Brand:|Shop:|Visit:)/g, (match) => `<b>${emojiMap[match]}</b>`);
+
+      const urlPattern = /((?:https?:\/\/|www\.)[^\s<]+)|(\b[a-z0-9-]+\.(?:com|co|to|us|io|net|org|sh)\/[^\s<]+)/gi;
+      return processedText.replace(urlPattern, (match) => {
+        let url = match;
+        if (!url.match(/^https?:\/\//i)) {
+          url = "https://" + url;
+        }
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #0085ff; text-decoration: underline;">${match}</a>`;
+      });
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>

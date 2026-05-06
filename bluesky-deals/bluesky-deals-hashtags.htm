@@ -182,6 +182,10 @@
       line-height: 1.4;
     }
 
+    .text a{
+      text-decoration: none;
+    }
+
     .post img {
       max-width: 100%;
       border-radius: 10px;
@@ -193,7 +197,7 @@
       border-radius: 10px;
       overflow: hidden;
       margin-top: 12px;
-      background: #fafafa;
+      background: #fff;
     }
 
     .link-card-content {
@@ -572,7 +576,7 @@ Visit: *short URL (only from marketplace websites)
               <div class="link-card-content">
                 <div class="link-card-title">${escapeHtml(ext.title || "")}</div>
                 <div class="link-card-desc">${escapeHtml(ext.description || "")}</div>
-                <a href="${ext.uri}" target="_blank">Open Link</a>
+                <a href="${ext.uri}" target="_blank">Visit Shop</a>
               </div>
             </div>
           `;

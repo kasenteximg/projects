@@ -493,11 +493,16 @@ Visit: *short URL (only from marketplace websites)
 
       } catch (error) {
         console.error("Fetch error:", error);
-        
-        if (error.message.includes("Failed to fetch")) {
-          message.innerHTML = "<strong>Network Error:</strong> Unable to reach Bluesky. This is often caused by 1) Ad-blockers/Privacy Shields blocking the API, or 2) A temporary CORS issue. Try disabling your ad-blocker for this site.";
+
+        if (error.message.includes("Failed to fetch") || error.name === "TypeError") {
+          message.innerHTML = `
+            <strong>Connection Blocked:</strong> The browser refused to connect to the Bluesky API.<br><br>
+            <small>Possible reasons:<br>
+            1. An <strong>Ad-blocker</strong> or <strong>Privacy Shield</strong> is blocking "bsky.app".<br>
+            2. You are using a VPN that is being rate-limited.<br>
+            Please try disabling extensions or opening this page in an Incognito window.</small>`;
         } else {
-          message.innerText = "Error: " + error.message;
+          message.innerText = "API Error: " + error.message;
         }
         message.style.color = "#dc2626";
       }

@@ -464,7 +464,7 @@ Visit: *short URL (only from marketplace websites)
         // We search for 'skyshop' without the '#' prefix. 
         // Using a literal '#' in a URL (like in your error log) causes the request to be cut off,
         // leading to a 403 error for an empty query. The API will still find #skyshop tags.
-        const url = `https://api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=skyshop&sort=latest&limit=100`;
+        const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=skyshop&sort=latest&limit=100`;
         
         const res = await fetch(url);
         

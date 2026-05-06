@@ -395,6 +395,12 @@ Visit: *short URL (only from marketplace websites)
   <script>
     let allFilteredPosts = [];
 
+    // Automatically load posts and set the initial tab when the page loads
+    window.addEventListener('DOMContentLoaded', () => {
+      switchTab('discover');
+      loadPosts();
+    });
+    
     function switchTab(tabId) {
       // Update buttons
       document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -452,13 +458,17 @@ Visit: *short URL (only from marketplace websites)
       results.innerHTML = "";
       message.innerText = "Loading posts...";
       message.style.display = "block";
+      message.style.color = "#555"; // Reset color in case of previous error
 
       try {
         // Search for posts containing #skyshop, sorted by latest
         const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=%23skyshop&sort=latest&limit=100`;
         const res = await fetch(url);
+        
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
         const data = await res.json();
-
         if (!data.posts || data.posts.length === 0) {
           message.innerText = "No posts found.";
           return;
@@ -483,11 +493,8 @@ Visit: *short URL (only from marketplace websites)
 
       } catch (error) {
         console.error("Fetch error:", error);
-        if (error.name === 'TypeError' || error.message.includes("NetworkError") || error.message.includes("Failed to fetch")) {
-          message.innerText = "Connection Error: Browsers block API calls from local files. Please upload to GitHub Pages or use a local server to avoid CORS blocks.";
-        } else {
-          message.innerText = "Error: " + error.message;
-        }
+        // More generic error message since file:// is no longer the issue
+        message.innerText = "Failed to load posts. Please check your internet connection or try again later.";
         message.style.color = "#dc2626";
       }
     }
@@ -517,6 +524,7 @@ Visit: *short URL (only from marketplace websites)
 
       results.innerHTML = "";
       message.innerText = `Showing ${posts.length} matching posts.`;
+      message.style.color = "#555"; // Reset color after successful render
 
       posts.forEach(item => {
         const post = item.post;

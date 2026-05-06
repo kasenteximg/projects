@@ -461,12 +461,16 @@ Visit: *short URL (only from marketplace websites)
       message.style.color = "#555"; // Reset color in case of previous error
 
       try {
-        // Search for posts containing #skyshop, sorted by latest
-        const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent('#skyshop')}&sort=latest&limit=100`;
+        // We search for 'skyshop' without the '#' prefix. 
+        // Using a literal '#' in a URL (like in your error log) causes the request to be cut off,
+        // leading to a 403 error for an empty query. The API will still find #skyshop tags.
+        const url = `https://api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=skyshop&sort=latest&limit=100`;
+        
         const res = await fetch(url);
         
         if (!res.ok) {
-            throw new Error(`HTTP error! status: ${res.status}`);
+          if (res.status === 403) throw new Error("Forbidden (403): The API rejected the request. This usually happens with malformed URLs or rate limits.");
+          throw new Error(`HTTP error! status: ${res.status}`);
         }
         const data = await res.json();
         if (!data.posts || data.posts.length === 0) {
@@ -493,13 +497,14 @@ Visit: *short URL (only from marketplace websites)
 
       } catch (error) {
         console.error("Fetch error:", error);
-
+        
+        // If fetch fails before reaching 'res.ok', it's usually a CORS/Network issue.
         if (error.message.includes("Failed to fetch") || error.name === "TypeError") {
           message.innerHTML = `
-            <strong>Connection Blocked:</strong> The browser refused to connect to the Bluesky API.<br><br>
-            <small>Possible reasons:<br>
-            1. An <strong>Ad-blocker</strong> or <strong>Privacy Shield</strong> is blocking "bsky.app".<br>
-            2. You are using a VPN that is being rate-limited.<br>
+            <strong>Connection Error (likely 403):</strong> The Bluesky API rejected the request.<br><br>
+            <small>Common fixes:<br>
+            1. <strong>Incognito Mode:</strong> Try opening this in an Incognito window to see if an extension is blocking it.<br>
+            2. <strong>Rate Limits:</strong> If you refreshed many times quickly, wait 1 minute.<br>
             Please try disabling extensions or opening this page in an Incognito window.</small>`;
         } else {
           message.innerText = "API Error: " + error.message;

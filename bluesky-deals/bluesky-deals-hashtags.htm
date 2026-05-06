@@ -462,7 +462,7 @@ Visit: *short URL (only from marketplace websites)
 
       try {
         // Search for posts containing #skyshop, sorted by latest
-        const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=%23skyshop&sort=latest&limit=100`;
+        const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent('#skyshop')}&sort=latest&limit=100`;
         const res = await fetch(url);
         
         if (!res.ok) {
@@ -493,8 +493,12 @@ Visit: *short URL (only from marketplace websites)
 
       } catch (error) {
         console.error("Fetch error:", error);
-        // More generic error message since file:// is no longer the issue
-        message.innerText = "Failed to load posts. Please check your internet connection or try again later.";
+        
+        if (error.message.includes("Failed to fetch")) {
+          message.innerHTML = "<strong>Network Error:</strong> Unable to reach Bluesky. This is often caused by 1) Ad-blockers/Privacy Shields blocking the API, or 2) A temporary CORS issue. Try disabling your ad-blocker for this site.";
+        } else {
+          message.innerText = "Error: " + error.message;
+        }
         message.style.color = "#dc2626";
       }
     }

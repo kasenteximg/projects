@@ -528,7 +528,16 @@ Visit: *short URL (only from marketplace websites)
 
         const matchesWebsite = !website || website.split(',').some(site => lowerText.includes(site.trim()));
         const matchesBrand = !brand || lowerText.includes("brand: " + brand);
-        const matchesCategory = !category || (lowerText.includes(category) && lowerText.includes("#skyshop"));
+
+        let matchesCategory = true;
+        if (category) {
+          if (category === '#other') {
+            const mainCategories = ['#home', '#electronics', '#kitchen', '#sports', '#outdoors', '#women', '#men', '#health', '#beauty', '#food', '#pets'];
+            matchesCategory = !mainCategories.some(cat => lowerText.includes(cat));
+          } else {
+            matchesCategory = lowerText.includes(category) && lowerText.includes("#skyshop");
+          }
+        }
         
         return matchesWebsite && matchesBrand && matchesCategory;
       });
@@ -599,9 +608,6 @@ Visit: *short URL (only from marketplace websites)
         "Shop:": "🛍️ Shop:",
         "Visit:": "🔗 Visit:"
       };
-
-      // Add a line break before "Price:" if it's not already preceded by one
-      processedText = processedText.replace(/(?<!\n)(Price:)/g, '<br>$1');
 
       processedText = processedText.replace(/\b(Item:|Price:|Brand:|Shop:|Visit:)/g, (match) => `<b>${emojiMap[match]}</b>`);
 

@@ -137,6 +137,9 @@
       padding: 15px;
       border-bottom: 1px solid #e5e7eb;
       background: #f8fafc;
+      position: sticky;
+      top: 50px;
+      z-index: 9;
     }
 
     input, select {
@@ -496,7 +499,7 @@ Visit: *short URL (only from marketplace websites)
       const message = document.getElementById("message");
 
       results.innerHTML = "";
-      message.innerText = "Loading posts...";
+      message.innerText = "Searching for more...";
       message.style.display = "block";
       message.style.color = "#555"; // Reset color in case of previous error
 

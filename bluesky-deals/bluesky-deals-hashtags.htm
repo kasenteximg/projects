@@ -1,3 +1,19 @@
+<!--
+  LICENSE NOTICE:
+  This program is free software: you can redistribute it and/or modify it
+  under the terms of the GNU Affero General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This project is provided "AS IS", without warranty of any kind, express or implied, 
+  including but not limited to the warranties of merchantability, fitness for a 
+  particular purpose and noninfringement. In no event shall the authors or 
+  copyright holders be liable for any claim, damages or other liability, whether 
+  in an action of contract, tort or otherwise, arising from, out of or in 
+  connection with the software or the use or other dealings in the software.
+
+  For more details, see <https://www.gnu.org/licenses/>.
+-->
 <!DOCTYPE html>
 <html>
 <head>
@@ -362,13 +378,14 @@ Visit: *short URL (only from marketplace websites)
             <li>Use the filters on the right to narrow down your search by website or specific brands.</li>
           </ul>
           <p><i>*This is a public tool and does not require a login to browse public feeds. *Some items may be affiliate ads from creators. This feature does not track you or sell your shopping data.</i></p>
+          <p><a href="https://bsky.app/profile/skyshop.bsky.social" target="_blank">@shyshop.bsky.social</a></p>
         </div>
       </div>
 
     </main>
 
     <aside class="rightbar">
-      <img src="https://raw.githubusercontent.com/kasenteximg/projects/549c347c89d1f6fb509633e9fe5f84ec1cb90fe7/bluesky-deals/shopping_bag_logo.svg" alt="Shopping Bag Logo" class="logo">
+      <img src="shopping_bag_logo.svg" alt="Shopping Bag Logo" class="logo">
       <h2>Filters</h2>
 
       <div class="placeholder-box">
@@ -409,6 +426,8 @@ Visit: *short URL (only from marketplace websites)
       <div class="placeholder-box">
          We help you discover the latest product deals and items shared on Bluesky, all organized in a consistent and easy-to-browse format. This feature does not track you or sell your shopping data. <b>*Some items may be affiliate ads from creators.</b> <b style="color:#ff3176">More features to come!</b>
       </div>
+      <div><a href="https://bsky.app/profile/skyshop.bsky.social" target="_blank" style="font-size: 11px; text-decoration: none;color: #64748b;">@shyshop.bsky.social</a></div>
+    
     </aside>
 
   </div>
@@ -601,7 +620,7 @@ Visit: *short URL (only from marketplace websites)
             <div class="post-content">
               <div class="author">
                 <span class="author-name">${escapeHtml(author)}</span>
-                <span class="author-handle">@${escapeHtml(handle)}</span>
+                <a href="https://bsky.app/profile/${escapeHtml(handle)}" target="_blank" class="author-handle">@${escapeHtml(handle)}</a>
                 <span class="timestamp">· ${createdAt}</span>
               </div>
             <div class="text">${linkify(text)}</div>

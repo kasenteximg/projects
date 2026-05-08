@@ -339,7 +339,7 @@
 
       <div id="discover" class="tab-content active">
         <div class="controls">
-          <button onclick="loadPosts()" style="width: 100%;">Show New Deals</button>
+          <button onclick="clearSearchAndLoad()" style="width: 100%;">Show New Deals</button>
         </div>
 
         <div id="message" style="padding: 15px 15px 0 15px;"></div>
@@ -350,7 +350,7 @@
         <div class="about-pane">
           <h2>About Sky Shop</h2>
           <p>
-            We help you discover the latest product deals and items shared on Bluesky, all organized in a consistent and easy-to-browse format.
+            We help to discover the latest product deals and items shared on Bluesky, all organized in a consistent and easy-to-browse format.
           </p>
           <p>
             Anyone can participate by posting products using <b>#skyshop</b>. Influencers, creators, and affiliates are welcome and encouraged to share deals using the format below:
@@ -376,11 +376,12 @@ Visit: *short URL (only from marketplace websites)
 
           <h3>How it works</h3>
           <ul>
-            <li>All feeds are specifically from #skyshop hashtags</li>
+            <li>All feeds are specifically from #skyshop, and additional criterias</li>
             <li>We filter for posts containing specific product metadata like <b>Item</b>, <b>Price</b>, and <b>Brand</b>.</li>
+            <li>All posts with #skyshop must have specific criteria listed above to be displayed</li>
             <li>Use the filters on the right to narrow down your search by website or specific brands.</li>
           </ul>
-          <p><i>*This is a public tool and does not require a login to browse public feeds. *Some items may be affiliate ads from creators. This feature does not track you or sell your shopping data.</i></p>
+          <p><i>*This is a public tool and does not require a login to browse public feeds. Login may be required for additional features. *Some items may be affiliate ads from creators. This feature does not track you or sell your shopping data.</i></p>
           <p><a href="https://bsky.app/profile/skyshop.bsky.social" target="_blank">@shyshop.bsky.social</a></p>
         </div>
       </div>
@@ -389,6 +390,15 @@ Visit: *short URL (only from marketplace websites)
 
     <aside class="rightbar">
       <img src="shopping_bag_logo.svg" alt="Shopping Bag Logo" class="logo">
+
+      <div class="placeholder-box">
+        <label>Search</label>
+        <div style="display: flex; gap: 8px; margin-top: 6px;">
+          <input type="text" id="searchInput" placeholder="Search items..." onkeydown="if(event.key === 'Enter') loadPosts()" style="margin-top: 0;">
+          <button onclick="loadPosts()" style="padding: 0 15px; height: 40px; font-size: 14px;">Search</button>
+        </div>
+      </div>
+
       <h2>Filters</h2>
 
       <div class="placeholder-box">
@@ -397,7 +407,7 @@ Visit: *short URL (only from marketplace websites)
           <div class="filter-chip" onclick="toggleWebsiteFilter(this, 'amazon.com,a.co,amzn.to')">Amazon</div>
           <div class="filter-chip" onclick="toggleWebsiteFilter(this, 'walmart.com,goto.walmart.com')">Walmart</div>
           <div class="filter-chip" onclick="toggleWebsiteFilter(this, 'temu.com,temu.to')">Temu</div>
-          <div class="filter-chip" onclick="toggleWebsiteFilter(this, 'tiktok.com/shop,tiktok.com,vt.tiktok.com')">TikTok Shop</div>
+          <div class="filter-chip" onclick="toggleWebsiteFilter(this, 'tiktok.com/shop,vt.tiktok.com')">TikTok Shop</div>
         </div>
         <input type="hidden" id="websiteFilter" value="">
       </div>
@@ -422,7 +432,7 @@ Visit: *short URL (only from marketplace websites)
       </div>
 
       <div class="placeholder-box">
-         We help you discover the latest product deals and items shared on Bluesky, all organized in a consistent and easy-to-browse format. This feature does not track you or sell your shopping data. <b>*Some items may be affiliate ads from creators.</b> <b style="color:#ff3176">More features to come!</b>
+         We help to discover the latest product deals and items shared on Bluesky, all organized in a consistent and easy-to-browse format. This feature does not track you or sell your shopping data. <b>*Some items may be affiliate ads from creators.</b> <b style="color:#ff3176">More features to come!</b>
       </div>
       <div><a href="https://bsky.app/profile/skyshop.bsky.social" target="_blank" style="font-size: 11px; text-decoration: none;color: #64748b;">@shyshop.bsky.social</a></div>
     
@@ -432,7 +442,8 @@ Visit: *short URL (only from marketplace websites)
 
   <script>
     // Add keywords or hashtags here to fetch from Bluesky
-    const SEARCH_KEYWORDS = ['#skyshop'];
+    const SEARCH_KEYWORDS = ['#skyshop', '#amazondeals', '#deals', '#walmartdeals'];
+    const NORMALIZED_KEYWORDS = SEARCH_KEYWORDS.map(k => k.toLowerCase().replace(/^#/, ''));
 
     let allFilteredPosts = [];
 
@@ -492,6 +503,11 @@ Visit: *short URL (only from marketplace websites)
       applyFilters();
     }
 
+    function clearSearchAndLoad() {
+      document.getElementById("searchInput").value = "";
+      loadPosts();
+    }
+
     async function loadPosts() {
       const results = document.getElementById("results");
       const message = document.getElementById("message");
@@ -502,38 +518,102 @@ Visit: *short URL (only from marketplace websites)
       message.style.color = "#555"; // Reset color in case of previous error
 
       try {
-        // Join keywords with OR so the search finds posts matching any of them
-        const query = SEARCH_KEYWORDS.join(' OR ');
-        const url = `https://api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent(query)}&sort=latest&limit=100`;
+        let combinedPosts = [];
+        const seenUris = new Set();
+
+        // Determine which keywords to fetch. 
+        // If there's a search term, prioritize it; otherwise use the default feed keywords.
+        const searchTerm = document.getElementById("searchInput").value.trim().toLowerCase();
         
-        const res = await fetch(url);
-        
-        if (!res.ok) {
-          if (res.status === 403) throw new Error("Forbidden (403): The API rejected the request. This usually happens with malformed URLs or rate limits.");
-          throw new Error(`HTTP error! status: ${res.status}`);
+        let keywordsToFetch;
+        if (searchTerm) {
+          // Optimize: don't double-fetch if they are already searching for the main tag
+          const isPrimaryTag = searchTerm === '#skyshop' || searchTerm === 'skyshop';
+          keywordsToFetch = isPrimaryTag ? ['#skyshop'] : [searchTerm, `${searchTerm} #skyshop`];
+        } else {
+          keywordsToFetch = [...SEARCH_KEYWORDS];
         }
-        const data = await res.json();
-        if (!data.posts || data.posts.length === 0) {
+
+        // Fetch all keywords in parallel to guarantee "OR" results faster
+        const fetchPromises = keywordsToFetch.map(async (kw) => {
+          try {
+            const url = `https://api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent(kw)}&sort=latest&limit=50`;
+            const res = await fetch(url);
+            if (!res.ok) {
+              console.warn(`Search failed for: ${kw}`, res.status);
+              return [];
+            }
+            const data = await res.json();
+            return data.posts || [];
+          } catch (e) {
+            console.warn(`Fetch error for: ${kw}`, e);
+            return [];
+          }
+        });
+
+        const allResults = await Promise.all(fetchPromises);
+        allResults.flat().forEach(post => {
+          if (!seenUris.has(post.uri)) {
+            seenUris.add(post.uri);
+            combinedPosts.push(post);
+          }
+        });
+
+        if (combinedPosts.length === 0) {
           message.innerText = "No posts found.";
           return;
         }
 
-        // Map the search results to match the expected format for the rest of the script
-        const feedItems = data.posts.map(post => ({ post }));
+        // Sort combined results by date (latest first)
+        combinedPosts.sort((a, b) => new Date(b.record.createdAt) - new Date(a.record.createdAt));
+
+        const feedItems = combinedPosts.map(post => ({ post }));
 
         const allowedDomains = [
           'amazon.com', 'a.co', 'amzn.to',
           'walmart.com', 'goto.walmart.com',
           'temu.com', 'temu.to',
-          'tiktok.com/shop', 'tiktok.com', 'vt.tiktok.com'
+          'tiktok.com/shop', 'vt.tiktok.com'
         ];
 
         allFilteredPosts = feedItems.filter(item => {
           const text = item.post.record.text || "";
           const lowerText = text.toLowerCase();
+
+          // Validate format for #skyshop posts
+          const hasSkyShop = lowerText.includes('#skyshop');
+          const requiredLabels = ['item:', 'price:', 'brand:', 'shop:', 'visit:'];
+          const hasAllLabels = requiredLabels.every(label => lowerText.includes(label));
+          if (hasSkyShop && !hasAllLabels) return false;
+
           const externalUri = item.post.embed?.external?.uri?.toLowerCase() || "";
-          // Filter out posts where a link-card is present but missing a thumbnail image
-          const externalHasNoThumb = item.post.embed?.external && !item.post.embed.external.thumb;
+          
+          // Robust check to ensure the post has at least one image, considering all embed types
+          let hasAnyImage = false;
+          const embed = item.post.embed;
+          if (embed) {
+              if (embed.$type === 'app.bsky.embed.images#view') {
+                  hasAnyImage = (embed.images?.length > 0);
+              } else if (embed.$type === 'app.bsky.embed.external#view') {
+                  hasAnyImage = (!!embed.external?.thumb);
+              } else if (embed.$type === 'app.bsky.embed.recordWithMedia#view') {
+                  // This embed type contains both a record (quoted post) and media (images or external)
+                  const media = embed.media;
+                  if (media?.$type === 'app.bsky.embed.images#view') {
+                      hasAnyImage = (media.images?.length > 0);
+                  } else if (media?.$type === 'app.bsky.embed.external#view') {
+                      hasAnyImage = (!!media.external?.thumb);
+                  }
+              }
+          }
+          
+          // Count URLs in the text if there's no link-card
+          let hasMultipleUrlsInText = false;
+          if (!item.post.embed?.external) {
+            const urlPattern = /((?:https?:\/\/|www\.)[^\s<]+)|(\b[a-z0-9-]+\.(?:com|co|to|us|io|net|org|sh)\/[^\s<]+)/gi;
+            const urlsInText = (text.match(urlPattern) || []).length;
+            hasMultipleUrlsInText = urlsInText > 1;
+          }
 
           // Check for official Bluesky content labels (adult content)
           const labels = item.post.labels || [];
@@ -541,11 +621,11 @@ Visit: *short URL (only from marketplace websites)
             ['porn', 'sexual', 'nudity', 'nsfw', 'graphic-media', 'gore'].includes(l.val.toLowerCase()) || 
             l.val.startsWith('!')
           );
-
           return (
             allowedDomains.some(domain => lowerText.includes(domain) || externalUri.includes(domain)) &&
-            !isAdult &&
-            !externalHasNoThumb
+            !isAdult && // Filter out adult content
+            hasAnyImage && // Keep only posts with images (attached or link-card thumbs)
+            !hasMultipleUrlsInText // Filter out posts with multiple URLs in text if no link-card
           );
         });
 
@@ -572,12 +652,18 @@ Visit: *short URL (only from marketplace websites)
     function applyFilters() {
       const website = document.getElementById("websiteFilter").value.toLowerCase();
       const category = document.getElementById("categoryFilter").value.toLowerCase();
+      const searchTerm = document.getElementById("searchInput").value.toLowerCase();
 
       const filtered = allFilteredPosts.filter(item => {
         const text = item.post.record.text || "";
         const lowerText = text.toLowerCase();
 
+        const matchesSearch = !searchTerm || lowerText.includes(searchTerm);
         const matchesWebsite = !website || website.split(',').some(site => lowerText.includes(site.trim()));
+        
+        // Intent Logic: Post must match our global deal keywords OR the user's specific search term
+        const searchKeyword = searchTerm.replace(/^#/, '').trim();
+        const matchesKeywords = NORMALIZED_KEYWORDS.some(k => lowerText.includes(k)) || (searchKeyword !== "" && lowerText.includes(searchKeyword));
 
         let matchesCategory = true;
         if (category) {
@@ -585,12 +671,11 @@ Visit: *short URL (only from marketplace websites)
             const mainCategories = ['#home', '#electronics', '#kitchen', '#sports', '#outdoors', '#women', '#men', '#health', '#beauty', '#food', '#pets'];
             matchesCategory = !mainCategories.some(cat => lowerText.includes(cat));
           } else {
-            // Match category and at least one of the primary search keywords
-            matchesCategory = lowerText.includes(category) && SEARCH_KEYWORDS.some(k => lowerText.includes(k.toLowerCase()));
+            matchesCategory = lowerText.includes(category);
           }
         }
         
-        return matchesWebsite && matchesCategory;
+        return matchesSearch && matchesWebsite && matchesKeywords && matchesCategory;
       });
 
       renderPosts(filtered);

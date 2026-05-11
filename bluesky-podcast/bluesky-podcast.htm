@@ -1,0 +1,1702 @@
+<!--
+
+Bluesky Audio Player
+Copyright (c) 2026 Kasentex. All rights reserved.
+
+This software, source code, design, workflow, and related
+implementation details are provided for media playback on the BlueSky network.
+
+Unauthorized commercial use, resale, redistribution, sublicensing,
+SaaS deployment, paid hosting, or monetization of this software
+or any derivative work is not permitted without explicit written
+permission from the copyright owner.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Hamigua - Video Podcast Player for BlueSky</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+      padding-bottom: 120px;
+      padding-top: 45px;
+      transition: padding-top 0.2s ease;
+    }
+
+    /* Global Minimalist Scrollbar (Shopify-style) */
+    * {
+      scrollbar-width: auto;
+      scrollbar-color: rgba(239, 68, 68, 0.9) transparent;
+    }
+
+    ::-webkit-scrollbar {
+      width: 12px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    /* Keep track transparent for a cleaner look */
+    *:hover::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    /* Firefox support: show scrollbar on hover */
+    *:hover {
+      scrollbar-color: rgba(239, 68, 68, 0.9) transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(239, 68, 68, 0.9);
+      border-radius: 6px;
+    }
+
+    /* Brighten thumb on container hover */
+    *:hover::-webkit-scrollbar-thumb {
+      background: rgba(239, 68, 68, 0.9);
+    }
+
+    ::-webkit-scrollbar-thumb:active {
+      background: rgba(239, 68, 68, 0.9);
+    }
+
+    ::-webkit-scrollbar-button {
+      display: none;
+    }
+
+    body.banner-open {
+      padding-top: 85px;
+    }
+
+    .top-banner {
+      border-bottom: 1px solid #ffffff;
+      padding: 12px 28px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: fixed; /* Added to keep banner on top */
+      top: 0; /* Added to keep banner on top */
+      left: 0; /* Added to keep banner on top */
+      width: 100%; /* Added to keep banner on top */
+      font-size: 11px;
+      font-weight: 600;
+      color: #ffffff;
+      box-sizing: border-box;
+      text-transform: uppercase;
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #000;
+      z-index: 1001;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+    }
+    .nav-links a {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .nav-links a svg {
+      width: 20px;
+      height: 20px;
+      color: #ef4444;
+      stroke-width: 2.5px;
+    }
+
+       .nav-links a svg:hover {
+      color: #fff;
+    }
+    .nav-links a:hover {
+      color: #fff;
+    }
+
+    .secondary-banner {
+      position: fixed;
+      top: 44px;
+      left: 0;
+      width: 100%;
+      background: #111;
+      border-bottom: 1px solid #333;
+      padding: 8px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 1000;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+
+
+    .container {
+      max-width: 1300px;
+      margin: auto;
+      padding: 28px;
+    }
+
+    h1 {
+      margin: 0;
+    }
+
+    .show-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .show-header-logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      object-fit: cover;
+      background: #1f2937;
+      flex-shrink: 0;
+    }
+
+    .profile-link {
+      margin-top: 6px;
+      font-size: 15px;
+      font-weight: normal;
+    }
+
+    .profile-link a {
+      color: #ef4444;
+      text-decoration: none;
+      opacity: 1;
+    }
+
+    .profile-link a:hover {
+      text-decoration: underline;
+    }
+
+    .show-grid {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+
+    .show-card {
+      width: 160px;
+      background: rgba(255,255,255,0.06);
+      padding: 14px;
+      border-radius: 16px;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .show-card:hover {
+      background: rgba(239, 68, 68, 0.05);
+      border-color: #eeff00;
+      border: 2px solid #eeff00;
+    }
+
+    .show-card.add-show-active {
+      width: 300px; /* Make the active add show card wider */
+      padding: 20px; /* Increase padding for more internal space */
+    }
+
+    .show-card img {
+      width: 82px;
+      height: 82px;
+      border-radius: 8px;
+      object-fit: cover;
+      margin-bottom: 12px;
+      background: #171717;
+    }
+
+    .show-name {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .show-handle {
+      font-size: 12px;
+      opacity: 0.65;
+      margin-top: 4px;
+    }
+
+    .back-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      border: 1px solid #fff;
+      color: #ef4444;
+      margin-bottom: 32px;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .back-btn:hover {
+      border-color: #ef4444;
+      color: #fff;
+      background: #ef4444;
+    }
+
+    .back-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 2.5px;
+    }
+
+    .secondary-btn {
+      background: transparent;
+      color: #e5e5e5;
+      border: 1px solid #404040;
+    }
+    .secondary-btn:hover {
+      background: #ef4444;
+      border-color: #ef4444;
+      color: #fff;
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 32px;
+    }
+
+    .player {
+      background: #000;
+      border: 1px solid #262626;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .hero {
+      position: relative;
+      height: 300px; /* Reduced video player height */
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero img, .hero video {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .hero video {
+      background: black;
+      cursor: pointer;
+    }
+
+    .logo-placeholder {
+      object-fit: contain !important;
+      width: 140px !important;
+      height: 140px !important;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 24px;
+      background: #1f2937;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+
+    #title {
+      margin-top: 15px; /* Add some space below the video */
+      font-size: 15px;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      background: rgba(15, 15, 15, 0.8);
+      padding: 10px 16px;
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      font-weight:400;
+    }
+    #title a {
+      color: #ef4444;
+      text-decoration: none;
+    }
+    #title a:hover {
+      color: #fff;
+      text-decoration: underline;
+    }
+
+    .episodes {
+      background: none;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 15px;
+      max-height: 400px; /* Reduced max height for episode list */
+      overflow-y: auto;
+    }
+
+    .episode {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-bottom: 4px;
+      background: transparent;
+      border: 2px solid transparent;
+    }
+
+    .episode:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .episode.active {
+      background: rgba(59, 130, 246, 0.15);
+      border-color:#eeff00;
+      color: #fff;
+    }
+
+    .episode img {
+      width: 80px;
+      height: 80px;
+      border-radius: 14px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #1f2937;
+    }
+
+    .episode-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .episode-title {
+      font-size: 14px;
+      line-height: 1.4;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+    }
+
+    .episode-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 12px;
+      opacity: 0.75;
+    }
+
+    .empty-message {
+      opacity: 0.75;
+      padding: 20px;
+      line-height: 1.5;
+    }
+
+    .bottom-player {
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      min-height: 80px;
+      background: #0a0a0a;
+      border-top: 1px solid #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 12px 24px;
+      box-sizing: border-box;
+      z-index: 999;
+
+    }
+
+    .bottom-player img {
+      width: 58px;
+      height: 58px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #000;
+      flex-shrink: 0;
+      border: 1px solid #000;
+    }
+
+    .now-playing {
+      font-size: 10px;
+      opacity: 0.6;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .bottom-title {
+      width: 280px;
+      font-size: 13px;
+      line-height: 1.3;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .bottom-handle {
+      font-size: 11px;
+      opacity: 0.65;
+      margin-top: 2px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .bottom-handle a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .bottom-handle a:hover {
+      text-decoration: underline;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .controls button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border-radius: 50%;
+    }
+
+    #playPauseBtn {
+      width: 52px;
+      height: 52px;
+    }
+
+    .controls button svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 2.5px;
+    }
+
+    button {
+      background: #ef4444;
+      border: 1px solid #ef4444;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    button:hover {
+      background: #dc2626;
+      border-color: #dc2626;
+    }
+
+    .progress-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      opacity: 0.85;
+      min-width: 180px;
+    }
+
+    input[type="range"] {
+      accent-color: #ef4444;
+    }
+
+    .volume-wrap {
+      width: 150px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      opacity: 0.85;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    #newShowHandle {
+      width: 100%;
+      background: #000;
+      border: 1px solid #404040;
+      color: white;
+      padding: 14px 12px;
+      border-radius: 8px;
+      box-sizing: border-box;
+      font-size: 16px;
+      margin-bottom: 16px;
+      outline: none;
+      transition: all 0.2s ease-in-out;
+    }
+
+    #newShowHandle:focus {
+      border-color: #ef4444 !important;
+      padding: 20px 16px;
+      font-size: 18px;
+    }
+
+    .suggestion-list {
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      margin-top: -12px;
+      margin-bottom: 12px;
+      max-height: 180px;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .context-menu {
+      position: fixed;
+      background: #111;
+      border: 0px solid #333;
+      border-radius: 8px;
+      padding: 0;
+      z-index: 10000;
+      min-width: 150px;
+    }
+    .context-menu-item {
+      padding: 10px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+    .context-menu-item:hover {
+      background: #ef4444;
+      color: white;
+    }
+    .sleep-menu {
+      position: fixed;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 4px 0;
+      z-index: 10001;
+      min-width: 140px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .sleep-menu-item {
+      padding: 10px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .sleep-menu-item:hover {
+      background: #ef4444;
+      color: white;
+    }
+
+    .suggestion-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      font-size: 12px;
+      border-bottom: 1px solid #222;
+      cursor: pointer;
+    }
+    .suggestion-item:hover {
+      background: #1a1a1a;
+      color: #ef4444;
+    }
+    .suggestion-item img {
+      width: 24px; height: 24px; border-radius: 4px; object-fit: cover; background: #222;
+    }
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      .main {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        height: 360px;
+      }
+
+      .bottom-player {
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+
+      .bottom-title {
+        width: 220px;
+      }
+
+      body {
+        padding-bottom: 170px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="top-banner">
+  <div class="nav-links">
+    <span style="padding-top:3px;">Hamigua - Video Podcast Player for BlueSky</span>
+    <a href="javascript:void(0)" onclick="goHome()" title="Home" aria-label="Home"><i data-lucide="home"></i></a>
+    <a href="javascript:void(0)" onclick="showAbout()" title="About" aria-label="About"><i data-lucide="info"></i></a>
+    <a href="javascript:void(0)" onclick="resetToDefaultShows()" title="Reset Shows" aria-label="Reset Shows"><i data-lucide="rotate-ccw"></i></a>
+  </div>
+</div>
+
+<div id="resetBanner" class="secondary-banner hidden">
+  <span style="opacity: 0.8; font-weight: 500;">Reset show list to defaults? This will remove custom additions.</span>
+  <div style="display: flex; gap: 8px;">
+    <button onclick="confirmReset()" style="padding: 4px 12px; font-size: 11px;">Reset Everything</button>
+    <button onclick="closeResetBanner()" class="secondary-btn" style="padding: 4px 12px; font-size: 11px;">Cancel</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <section id="selectionPage">
+    <h1 style="margin-bottom:24px;">Explore Shows</h1>
+    <div id="showGrid" class="show-grid"></div>
+  </section>
+
+  <section id="playerPage" class="hidden">
+    <button class="back-btn" onclick="goHome()" title="Back to Shows"><i data-lucide="arrow-left"></i></button>
+
+    <div class="show-header">
+      <img id="showHeaderLogo" class="show-header-logo" src="">
+      <div id="profileName">Loading...</div>
+    </div>
+
+    <div class="main">
+      <div class="player">
+        <div class="hero">
+          <img id="heroImage" src="">
+          <video id="videoPlayer" class="hidden" playsinline></video>
+        </div>
+        <div style="padding: 15px 25px 25px;">
+          <h2 id="title">Choose an episode from the list</h2>
+        </div>
+      </div>
+
+      <div>
+        <h2 style="margin: 0 0 12px 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 1;">Episodes</h2>
+        <div class="episodes" id="episodes"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="aboutPage" class="hidden">
+    <h1 style="margin-bottom: 24px;">About</h1>
+    <div style="max-width: 600px; line-height: 1.6; opacity: 0.9;">
+      <p>A dedicated podcast and video player designed for the BlueSky social network. It leverages the AT Protocol to discover and play media content shared by creators via their handles.</p>
+
+            <h3 style="margin-top: 24px; color: #ef4444; font-size: 18px;">Keyboard Shortcuts</h3>
+      <div style="font-size: 14px; opacity: 0.9; display: grid; grid-template-columns: 120px 1fr; gap: 8px 16px;">
+        <strong>Space / K</strong> <span>Play / Pause</span>
+        <strong>F</strong> <span>Toggle Fullscreen</span>
+        <strong>M</strong> <span>Mute / Unmute</span>
+        <strong>&larr; / &rarr;</strong> <span>Seek backward/forward 10s</span>
+      </div>
+
+      <h3 style="margin-top: 24px; color: #ef4444; font-size: 18px;">Terms of Service</h3>
+      <p>By using this application, you agree to comply with BlueSky's Community Guidelines and AT Protocol specifications. This software is provided "as-is" without warranties. Users are responsible for the content they access. Unauthorized commercial redistribution is prohibited.</p>
+
+
+
+      <p style="margin-top: 32px;">&copy; 2026 Kasentex. All rights reserved.</p>
+      <button class="secondary-btn" style="margin-top: 24px;" onclick="goHome()">Back to Home</button>
+    </div>
+  </section>
+
+</div>
+
+<div class="bottom-player">
+  <img id="miniImage" src="">
+
+  <div>
+    <div class="now-playing">Now Playing</div>
+    <div class="bottom-title" id="miniTitle">Choose an episode to play</div>
+    <div class="bottom-handle" id="miniHandle"></div>
+  </div>
+
+  <div class="controls">
+    <button id="sleepTimerBtn" class="secondary-btn" onclick="toggleSleepTimer(event)" title="Sleep Timer" aria-label="Sleep Timer" style="position: relative; width: auto; padding: 0 10px; gap: 4px; min-width: 40px;">
+      <i data-lucide="moon"></i>
+      <span id="sleepCountdown" style="font-size: 10px; font-weight: bold; display: none;"></span>
+    </button>
+    <button class="secondary-btn" onclick="prevTrack()" title="Previous" aria-label="Previous Track"><i data-lucide="skip-back"></i></button>
+    <button id="playPauseBtn" onclick="togglePlay()" title="Play/Pause" aria-label="Play or Pause"><i data-lucide="play"></i></button>
+    <button class="secondary-btn" onclick="nextTrack()" title="Next" aria-label="Next Track"><i data-lucide="skip-forward"></i></button>
+    <button id="muteBtn" class="secondary-btn" onclick="toggleMute()" title="Mute/Unmute" aria-label="Mute or Unmute"><i data-lucide="volume-2"></i></button>
+  
+    <button class="secondary-btn" onclick="toggleFullScreen()" title="Fullscreen" aria-label="Toggle Fullscreen"><i data-lucide="maximize"></i></button>
+  </div>
+
+  <div class="progress-wrap">
+    <span id="currentTime">0:00</span>
+    <input type="range" id="progress" value="0" min="0">
+    <span id="duration">0:00</span>
+  </div>
+
+  <div class="volume-wrap">
+    <span>Vol</span>
+    <input type="range" id="volume" min="0" max="1" step="0.01" value="0.85">
+  </div>
+</div>
+
+<div id="sleepMenu" class="sleep-menu hidden">
+  <div class="sleep-menu-item" onclick="setSleepTimer(15)">15 Minutes</div>
+  <div class="sleep-menu-item" onclick="setSleepTimer(30)">30 Minutes</div>
+  <div class="sleep-menu-item" onclick="setSleepTimer(45)">45 Minutes</div>
+  <div class="sleep-menu-item" onclick="setSleepTimer(60)">1 Hour</div>
+  <div class="sleep-menu-item" style="border-top: 1px solid #333;" onclick="setSleepTimer(0)">Off</div>
+</div>
+
+<div id="contextMenu" class="context-menu hidden">
+  <div class="context-menu-item" onclick="removeSelectedShow()">
+    <i data-lucide="trash-2" style="width:14px;height:14px;"></i>
+    Remove Show
+  </div>
+</div>
+
+<script>
+const API = "https://public.api.bsky.app/xrpc";
+
+/*
+  Manually edit this list to choose which shows appear
+  on the Explore Shows selection page.
+*/
+const DEFAULT_SHOWS = [
+  "npr.org",
+  "marketplace.org",
+  "apnews.com",
+  "en.afp.com",
+  "reuters.com",
+  "restofworld.org",
+  "pbsnews.org"
+];
+let featuredShows = JSON.parse(localStorage.getItem('hamigua_featured_shows')) || DEFAULT_SHOWS;
+
+let shows = [];
+let episodes = [];
+let current = -1;
+let currentActor = "";
+let playingActor = "";
+let currentCursor = null;
+let isLoadingMore = false;
+let playingEpisodeIndex = -1;
+let playingEpisodes = [];
+let currentProfile = null;
+let isAddingShow = false;
+let addShowError = "";
+
+let sleepTimerEnd = null;
+let sleepTimerInterval = null;
+
+let searchTimeout = null;
+async function handleSearchInput(e) {
+  const query = e.target.value.trim();
+  const suggestionBox = document.getElementById("searchSuggestions");
+  if (searchTimeout) clearTimeout(searchTimeout);
+  if (!query) {
+    suggestionBox.innerHTML = "";
+    suggestionBox.classList.add("hidden");
+    return;
+  }
+  searchTimeout = setTimeout(async () => {
+    try {
+      const res = await fetch(`${API}/app.bsky.actor.searchActorsTypeahead?q=${encodeURIComponent(query)}&limit=5`);
+      const data = await res.json();
+      suggestionBox.innerHTML = "";
+      if (data.actors && data.actors.length > 0) {
+      data.actors.forEach(actor => {
+          const item = document.createElement("div");
+          item.className = "suggestion-item";
+          item.onclick = () => selectSuggestion(actor.handle);
+          item.innerHTML = `<img src="${actor.avatar || ''}" onerror="this.style.display='none'">`;
+          const nameText = document.createElement("span");
+          nameText.style.cssText = "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
+          nameText.textContent = actor.displayName || actor.handle;
+          item.appendChild(nameText);
+          suggestionBox.appendChild(item);
+        });
+        suggestionBox.classList.remove("hidden");
+      } else {
+        suggestionBox.innerHTML = "";
+        suggestionBox.classList.add("hidden");
+      }
+    } catch (err) {
+      console.error("Search failed", err);
+    }
+  }, 200);
+}
+function selectSuggestion(handle) {
+  const input = document.getElementById("newShowHandle");
+  if (input) input.value = handle;
+  submitAddShow();
+}
+
+function linkify(text) {
+  if (!text) return "";
+  // Escape basic HTML to prevent injection while allowing our generated tags
+  const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return escaped.replace(urlRegex, (url) => `<a href="${url}" target="_blank">${url}</a>`);
+}
+
+const media = document.getElementById("videoPlayer");
+const progress = document.getElementById("progress");
+const volume = document.getElementById("volume");
+
+// Restore volume preference from previous sessions
+const savedVolume = localStorage.getItem('hamigua_volume');
+if (savedVolume !== null) {
+  volume.value = savedVolume;
+}
+media.volume = Number(volume.value);
+
+function formatTime(sec) {
+  if (!Number.isFinite(sec)) return "0:00";
+
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60).toString().padStart(2, "0");
+
+  return `${m}:${s}`;
+}
+
+function timeAgo(date) {
+  const diff = Math.floor((new Date() - date) / 1000);
+  const days = Math.floor(diff / 86400);
+  const hours = Math.floor(diff / 3600);
+  const minutes = Math.floor(diff / 60);
+
+  if (days > 0) return `${days}D AGO`;
+  if (hours > 0) return `${hours}H AGO`;
+  if (minutes > 0) return `${minutes}M AGO`;
+
+  return "JUST NOW";
+}
+
+function getProfileUrl(actor) {
+  return `https://bsky.app/profile/${actor}`;
+}
+
+function getVideo(embed) {
+  if (!embed) return null;
+
+  if (embed.$type === "app.bsky.embed.video#view") {
+    return embed;
+  }
+
+  if (
+    embed.$type === "app.bsky.embed.recordWithMedia#view" &&
+    embed.media?.$type === "app.bsky.embed.video#view"
+  ) {
+    return embed.media;
+  }
+
+  return null;
+}
+
+async function loadShows() {
+  const grid = document.getElementById("showGrid");
+  grid.innerHTML = "Loading shows...";
+
+  shows = [];
+
+  for (const handle of featuredShows) {
+    try {
+      const res = await fetch(
+        `${API}/app.bsky.actor.getProfile?actor=${encodeURIComponent(handle)}`
+      );
+
+      const profile = await res.json();
+
+      shows.push({
+        handle,
+        name: profile.displayName || handle,
+        avatar: profile.avatar || "",
+        description: profile.description || ""
+      });
+
+    } catch (e) {
+      shows.push({
+        handle,
+        name: handle,
+        avatar: "",
+        description: ""
+      });
+    }
+  }
+
+  renderShows();
+}
+
+function renderShows() {
+  const grid = document.getElementById("showGrid");
+  grid.innerHTML = "";
+
+  // Add Show Card
+  const addCard = document.createElement("div");
+  addCard.className = "show-card";
+  if (isAddingShow) addCard.classList.add("add-show-active");
+
+  if (isAddingShow) {
+    addCard.innerHTML = `
+      <div style="font-size: 16px; font-weight: bold; margin-bottom: 16px; color: #ef4444;">Add New Show</div>
+      <input type="text" id="newShowHandle" placeholder="e.g. npr.org"
+             style="${addShowError ? 'border-color: #ef4444;' : ''}">
+      <div id="searchSuggestions" class="suggestion-list hidden"></div>
+      ${addShowError ? `<div style="color: #ef4444; font-size: 13px; margin-top: -12px; margin-bottom: 12px;">${addShowError}</div>` : ''}
+      <div style="display: flex; gap: 10px;">
+        <button id="addBtn" onclick="submitAddShow(event)" style="padding: 12px; flex: 1; font-size: 14px;">Add</button>
+        <button onclick="cancelAddShow(event)" class="secondary-btn" style="padding: 12px; flex: 1; font-size: 14px;">Cancel</button>
+      </div>
+    `;
+    addCard.onclick = (e) => e.stopPropagation();
+    grid.appendChild(addCard);
+    const input = document.getElementById("newShowHandle");
+    input.focus();
+    input.oninput = handleSearchInput;
+    input.onkeydown = (e) => {
+      if (e.key === "Enter") submitAddShow(e);
+      if (e.key === "Escape") cancelAddShow(e);
+    };
+  } else {
+    addCard.innerHTML = `
+      <div style="width: 82px; height: 82px; border-radius: 8px; background: #171717; display: flex; align-items: center; justify-content: center; font-size: 42px; margin-bottom: 12px; color: #ef4444; border: 1px dashed #404040;">+</div>
+      <div class="show-name">Add Show</div>
+      <div class="show-handle">Enter handle...</div>
+    `;
+    addCard.onclick = () => { isAddingShow = true; addShowError = ""; renderShows(); };
+    grid.appendChild(addCard);
+  }
+
+  shows.forEach(show => {
+    const card = document.createElement("div");
+    card.className = "show-card";
+
+    const img = document.createElement("img");
+    img.src = show.avatar || "";
+    const name = document.createElement("div");
+    name.className = "show-name";
+    name.textContent = show.name;
+    const handle = document.createElement("div");
+    handle.className = "show-handle";
+    handle.textContent = "@" + show.handle;
+
+    card.append(img, name, handle);
+    card.onclick = () => openShow(show.handle);
+    card.oncontextmenu = (e) => showContextMenu(e, show.handle);
+    grid.appendChild(card);
+  });
+}
+
+async function submitAddShow(event) {
+  if (event) event.stopPropagation();
+  const input = document.getElementById("newShowHandle");
+  const addBtn = document.getElementById("addBtn");
+
+  const handle = input.value.trim();
+  if (!handle) {
+    addShowError = "";
+    isAddingShow = false;
+    renderShows();
+    return;
+  }
+  
+  try {
+    addBtn.innerText = "Searching...";
+    addBtn.disabled = true;
+
+    let cleanHandle = handle.replace(/^@/, "").trim().toLowerCase();
+    let profile = null;
+
+    // 1. Try exact lookup for what was typed
+    let res = await fetch(`${API}/app.bsky.actor.getProfile?actor=${encodeURIComponent(cleanHandle)}`);
+    if (res.ok) profile = await res.json();
+
+    // 2. If no dot, try adding .bsky.social
+    if (!profile && !cleanHandle.includes('.')) {
+      const dotHandle = cleanHandle + ".bsky.social";
+      const res2 = await fetch(`${API}/app.bsky.actor.getProfile?actor=${encodeURIComponent(dotHandle)}`);
+      if (res2.ok) {
+        profile = await res2.json();
+        cleanHandle = dotHandle;
+      }
+    }
+
+    // 3. Fuzzy search fallback - only for inputs 3+ chars to avoid random matches
+    if (!profile && cleanHandle.length >= 3) {
+      const searchRes = await fetch(`${API}/app.bsky.actor.searchActorsTypeahead?q=${encodeURIComponent(handle)}&limit=1`);
+      const searchData = await searchRes.json();
+      
+      if (searchData.actors && searchData.actors.length > 0) {
+        const foundHandle = searchData.actors[0].handle;
+        // Ensure the result actually matches the search query to avoid "random" accounts
+        if (foundHandle.toLowerCase().includes(cleanHandle)) {
+          const retryRes = await fetch(`${API}/app.bsky.actor.getProfile?actor=${encodeURIComponent(foundHandle)}`);
+          if (retryRes.ok) {
+            profile = await retryRes.json();
+            cleanHandle = foundHandle;
+          }
+        }
+      }
+    }
+
+    if (!profile) throw new Error();
+
+    if (featuredShows.includes(cleanHandle)) {
+      addShowError = "already added";
+      renderShows();
+      return;
+    }
+
+    // Add the new show to the top of our lists
+    featuredShows.unshift(cleanHandle);
+    localStorage.setItem('hamigua_featured_shows', JSON.stringify(featuredShows));
+    shows.unshift({
+      handle: cleanHandle,
+      name: profile.displayName || cleanHandle,
+      avatar: profile.avatar || "",
+      description: profile.description || ""
+    });
+
+    isAddingShow = false;
+    addShowError = "";
+    renderShows();
+  } catch (e) {
+    addShowError = "not found";
+    renderShows();
+  }
+}
+
+function cancelAddShow(event) {
+  if (event) event.stopPropagation();
+  isAddingShow = false;
+  addShowError = "";
+  renderShows();
+}
+
+async function openShow(actor) {
+  currentActor = actor;
+  episodes = []; // Reset current list to signal any active background loading to stop
+
+  // If switching to a different show, reset the player UI immediately.
+  // This prevents the previous show's video from being visible during the transition.
+  if (actor !== playingActor) {
+    document.getElementById("videoPlayer").classList.add("hidden");
+    const heroImage = document.getElementById("heroImage");
+    heroImage.src = "";
+    heroImage.classList.remove("hidden");
+    heroImage.classList.add("logo-placeholder");
+    document.getElementById("title").innerText = "Choose an episode from the list";
+
+    document.getElementById("profileName").innerHTML = "Loading...";
+    document.getElementById("showHeaderLogo").src = "";
+  }
+
+  document.getElementById("selectionPage").classList.add("hidden");
+  document.getElementById("playerPage").classList.remove("hidden");
+
+  document.getElementById("episodes").innerHTML = "Loading episodes...";
+
+  await loadFeed(actor);
+}
+
+function goHome() {
+  currentActor = ""; // Clear active actor to stop background tasks
+  episodes = [];
+  document.getElementById("playerPage").classList.add("hidden");
+  document.getElementById("aboutPage").classList.add("hidden");
+  document.getElementById("selectionPage").classList.remove("hidden");
+}
+
+function showAbout() {
+  currentActor = ""; // Clear active actor to stop background tasks
+  episodes = [];
+  document.getElementById("selectionPage").classList.add("hidden");
+  document.getElementById("playerPage").classList.add("hidden");
+  document.getElementById("aboutPage").classList.remove("hidden");
+}
+
+function parseEpisodes(feed) {
+  return feed.reduce((acc, item) => {
+    const post = item.post;
+    const video = getVideo(post.embed);
+    if (video?.playlist) {
+      acc.push({
+        title: (post.record.text || "").replace(/\s+/g, ' ').trim() || "Untitled",
+        thumbnail: video.thumbnail || post.author.avatar,
+        playlist: video.playlist,
+        date: post.record.createdAt,
+        duration: "..."
+      });
+    }
+    return acc;
+  }, []);
+}
+
+async function loadFeed(actor) {
+  try {
+    const profileRes = await fetch(
+      `${API}/app.bsky.actor.getProfile?actor=${encodeURIComponent(actor)}`
+    );
+
+    const profile = await profileRes.json();
+    currentProfile = profile;
+
+    document.getElementById("showHeaderLogo").src = profile.avatar || "";
+    
+    const profileNameDiv = document.getElementById("profileName");
+    profileNameDiv.innerHTML = "";
+    const h1 = document.createElement("h1");
+    h1.textContent = profile.displayName || actor;
+    const linkDiv = document.createElement("div");
+    linkDiv.className = "profile-link";
+    const a = document.createElement("a");
+    a.href = getProfileUrl(actor);
+    a.target = "_blank";
+    a.textContent = `@${actor}`;
+    linkDiv.appendChild(a);
+    profileNameDiv.append(h1, linkDiv);
+
+    const feedRes = await fetch(
+      `${API}/app.bsky.feed.getAuthorFeed?actor=${encodeURIComponent(actor)}&filter=posts_with_media&limit=30`
+    );
+
+    const data = await feedRes.json();
+
+    if (currentActor !== actor) return; // Stop if user navigated away during fetch
+
+    currentCursor = data.cursor || null;
+    isLoadingMore = false;
+    episodes = parseEpisodes(data.feed);
+
+    // Restore playing state if we are returning to the active show
+    if (actor === playingActor && playingEpisodeIndex !== -1 && playingEpisodeIndex < episodes.length) {
+      playingEpisodes = episodes;
+      current = playingEpisodeIndex;
+      const ep = episodes[current];
+      document.getElementById("title").innerHTML = linkify(ep.title);
+      document.getElementById("heroImage").classList.add("hidden");
+      document.getElementById("videoPlayer").classList.remove("hidden");
+    } else {
+      current = -1;
+      const heroImage = document.getElementById("heroImage");
+      heroImage.src = profile.avatar || "";
+      heroImage.classList.add("logo-placeholder");
+      heroImage.classList.remove("hidden");
+      document.getElementById("videoPlayer").classList.add("hidden");
+      document.getElementById("title").innerText = "Choose an episode from the list";
+    }
+
+    if (!episodes.length) {
+      document.getElementById("episodes").innerHTML =
+        `<div class="empty-message">No playable video/audio posts found for this show.</div>`;
+      return;
+    }
+
+    renderEpisodes();
+    loadAllDurations();
+
+  } catch (e) {
+    episodes = [];
+    document.getElementById("episodes").innerHTML =
+      `<div class="empty-message">Failed to load episodes. Please try another show.</div>`;
+  }
+}
+
+async function fetchMoreEpisodes() {
+  if (!currentCursor || isLoadingMore || !currentActor) return;
+  const actor = currentActor;
+  isLoadingMore = true;
+
+  try {
+    const res = await fetch(
+      `${API}/app.bsky.feed.getAuthorFeed?actor=${encodeURIComponent(actor)}&filter=posts_with_media&limit=30&cursor=${currentCursor}`
+    );
+    const data = await res.json();
+    
+    if (currentActor !== actor) return;
+    currentCursor = data.cursor || null;
+    
+    const newBatch = parseEpisodes(data.feed);
+    if (newBatch.length > 0) {
+      const oldLen = episodes.length;
+      episodes = [...episodes, ...newBatch];
+      if (actor === playingActor) playingEpisodes = episodes;
+      
+      renderEpisodes(oldLen);
+      loadAllDurations();
+    }
+  } catch (e) {
+    console.error("Failed to load more episodes", e);
+  } finally {
+    isLoadingMore = false;
+  }
+}
+
+function renderEpisodes(appendFrom = 0) {
+  const wrap = document.getElementById("episodes");
+  if (appendFrom === 0) wrap.innerHTML = "";
+
+  for (let i = appendFrom; i < episodes.length; i++) {
+    const ep = episodes[i];
+    const div = document.createElement("div");
+    div.className = "episode" + (i === current ? " active" : "");
+
+    div.innerHTML = `<img src="${ep.thumbnail || ''}">`;
+    const content = document.createElement("div");
+    content.className = "episode-content";
+    const title = document.createElement("div");
+    title.className = "episode-title";
+    title.textContent = ep.title;
+    const meta = document.createElement("div");
+    meta.className = "episode-meta";
+    meta.innerHTML = `<div>${ep.date ? timeAgo(new Date(ep.date)) : ""}</div><div id="dur-${i}">${ep.duration || "..."}</div>`;
+    
+    content.append(title, meta);
+    div.appendChild(content);
+
+    div.onclick = () => loadEpisode(i);
+    wrap.appendChild(div);
+  }
+}
+
+function loadEpisode(index) {
+  playingEpisodes = episodes;
+  playingActor = currentActor;
+  startTrack(index);
+}
+
+function startTrack(index) {
+  playingEpisodeIndex = index;
+  const ep = playingEpisodes[index];
+  if (!ep) return;
+
+  // Update Main UI only if we are currently viewing the show that is playing
+  if (currentActor === playingActor) {
+    current = index;
+    renderEpisodes();
+
+    const heroImage = document.getElementById("heroImage");
+    const videoPlayer = document.getElementById("videoPlayer");
+    heroImage.classList.add("hidden");
+    videoPlayer.classList.remove("hidden");
+    videoPlayer.poster = ep.thumbnail;
+    document.getElementById("title").innerHTML = linkify(ep.title);
+  }
+
+  // Update Mini Player (Always)
+  document.getElementById("miniImage").src = ep.thumbnail;
+  document.getElementById("miniTitle").innerText = ep.title;
+  document.getElementById("miniHandle").innerHTML = `<a href="${getProfileUrl(playingActor)}" target="_blank">@${playingActor}</a>`;
+
+  // Reset Media
+  progress.value = 0;
+  document.getElementById("currentTime").innerText = "0:00";
+  document.getElementById("duration").innerText = ep.duration || "0:00";
+
+  if (window.hlsInstance) {
+    window.hlsInstance.destroy();
+    window.hlsInstance = null;
+  }
+
+  if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(ep.playlist);
+    hls.attachMedia(media);
+    window.hlsInstance = hls;
+  } else {
+    media.src = ep.playlist;
+  }
+
+  // Use the promise to handle potential interruptions
+  media.play().catch(err => {
+    console.warn("Playback prevented or interrupted:", err);
+  });
+}
+
+function updateMediaSession(ep) {
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: ep.title,
+      artist: playingActor,
+      artwork: [{ src: ep.thumbnail, sizes: '512x512', type: 'image/png' }]
+    });
+  }
+}
+
+async function loadAllDurations() {
+  // Process durations sequentially to avoid network congestion and CPU spikes
+  const targetEpisodes = episodes; // Capture current list reference
+  for (let i = 0; i < targetEpisodes.length; i++) {
+    if (episodes !== targetEpisodes) return; // Exit if the user switched shows or went home
+
+    const ep = targetEpisodes[i];
+    if (ep.duration !== "...") continue;
+
+    await new Promise((resolve) => {
+      const tempAudio = document.createElement("audio");
+      let resolved = false;
+
+      const finish = (dur) => {
+        if (resolved) return;
+        resolved = true;
+        if (dur) {
+          ep.duration = formatTime(dur);
+          // Surgically update only the duration text in the UI
+          if (episodes === targetEpisodes) {
+            const durEl = document.getElementById(`dur-${i}`);
+            if (durEl) durEl.textContent = ep.duration;
+          }
+        }
+        resolve();
+      };
+
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(ep.playlist);
+        hls.attachMedia(tempAudio);
+        tempAudio.addEventListener("loadedmetadata", () => {
+          finish(tempAudio.duration);
+          hls.destroy();
+        });
+        tempAudio.addEventListener("error", () => {
+          finish(null);
+          hls.destroy();
+        });
+        // Safety timeout for broken links
+        setTimeout(() => { finish(null); hls.destroy(); }, 5000);
+      } else {
+        tempAudio.src = ep.playlist;
+        tempAudio.addEventListener("loadedmetadata", () => finish(tempAudio.duration));
+        tempAudio.addEventListener("error", () => finish(null));
+        setTimeout(() => finish(null), 5000);
+      }
+    });
+  }
+}
+
+function toggleSleepTimer(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById("sleepMenu");
+  const isHidden = menu.classList.toggle("hidden");
+  
+  if (!isHidden) {
+    const btn = document.getElementById("sleepTimerBtn");
+    const rect = btn.getBoundingClientRect();
+    menu.style.bottom = (window.innerHeight - rect.top + 10) + "px";
+    menu.style.left = (rect.left + rect.width / 2 - 70) + "px";
+  }
+}
+
+function setSleepTimer(minutes) {
+  document.getElementById("sleepMenu").classList.add("hidden");
+  
+  if (sleepTimerInterval) {
+    clearInterval(sleepTimerInterval);
+    sleepTimerInterval = null;
+  }
+
+  if (minutes === 0) {
+    sleepTimerEnd = null;
+    updateSleepUI();
+    return;
+  }
+
+  sleepTimerEnd = Date.now() + minutes * 60 * 1000;
+  sleepTimerInterval = setInterval(checkSleepTimer, 1000);
+  updateSleepUI();
+}
+
+function checkSleepTimer() {
+  const now = Date.now();
+  if (now >= sleepTimerEnd) {
+    media.pause();
+    sleepTimerEnd = null;
+    clearInterval(sleepTimerInterval);
+    sleepTimerInterval = null;
+  }
+  updateSleepUI();
+}
+
+function updateSleepUI() {
+  const btn = document.getElementById("sleepTimerBtn");
+  const countdown = document.getElementById("sleepCountdown");
+
+  if (!sleepTimerEnd) {
+    countdown.style.display = "none";
+    btn.style.color = "";
+  } else {
+    const remainingSec = Math.max(0, Math.floor((sleepTimerEnd - Date.now()) / 1000));
+    const m = Math.floor(remainingSec / 60);
+    const s = (remainingSec % 60).toString().padStart(2, "0");
+    countdown.innerText = `${m}:${s}`;
+    countdown.style.display = "inline";
+    btn.style.color = "#ef4444";
+  }
+}
+
+// Setup Media Session Actions
+if ('mediaSession' in navigator) {
+  navigator.mediaSession.setActionHandler('play', () => media.play());
+  navigator.mediaSession.setActionHandler('pause', () => media.pause());
+  navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack());
+  navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack());
+  navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+    media.currentTime = Math.max(0, media.currentTime - (details.seekOffset || 10));
+  });
+  navigator.mediaSession.setActionHandler('seekforward', (details) => {
+    media.currentTime = Math.min(media.duration, media.currentTime + (details.seekOffset || 10));
+  });
+}
+
+function togglePlay() {
+  if (!media.src && !window.hlsInstance) {
+    // If nothing is playing, try to play the first episode of the current view
+    if (episodes.length) loadEpisode(0);
+    return;
+  }
+
+  if (media.paused) media.play();
+  else media.pause();
+}
+
+function nextTrack() {
+  if (!playingEpisodes.length) return;
+
+  const nextIndex = playingEpisodeIndex < 0
+    ? 0
+    : (playingEpisodeIndex + 1) % playingEpisodes.length;
+
+  startTrack(nextIndex);
+}
+
+function prevTrack() {
+  if (!playingEpisodes.length) return;
+
+  startTrack(Math.max(0, playingEpisodeIndex - 1));
+}
+
+function toggleMute() {
+  media.muted = !media.muted;
+}
+
+function toggleFullScreen() {
+  if (media.requestFullscreen) {
+    media.requestFullscreen();
+  } else if (media.webkitRequestFullscreen) { /* Safari */
+    media.webkitRequestFullscreen();
+  } else if (media.msRequestFullscreen) { /* IE11 */
+    media.msRequestFullscreen();
+  }
+}
+
+media.addEventListener("click", togglePlay);
+
+media.addEventListener("play", () => {
+  document.getElementById("playPauseBtn").innerHTML = '<i data-lucide="pause"></i>';
+  lucide.createIcons();
+  if (playingEpisodes[playingEpisodeIndex]) updateMediaSession(playingEpisodes[playingEpisodeIndex]);
+});
+
+media.addEventListener("volumechange", () => {
+  const muteBtn = document.getElementById("muteBtn");
+
+  // Sync slider visual position with mute state
+  volume.value = media.muted ? 0 : media.volume;
+
+  if (media.muted || media.volume === 0) {
+    muteBtn.innerHTML = '<i data-lucide="volume-x"></i>';
+  } else {
+    muteBtn.innerHTML = '<i data-lucide="volume-2"></i>';
+  }
+  lucide.createIcons();
+});
+
+media.addEventListener("pause", () => {
+  document.getElementById("playPauseBtn").innerHTML = '<i data-lucide="play"></i>';
+  lucide.createIcons();
+});
+
+media.addEventListener("ended", () => {
+  nextTrack();
+});
+
+media.addEventListener("timeupdate", () => {
+  progress.value = media.currentTime;
+
+  document.getElementById("currentTime").innerText =
+    formatTime(media.currentTime);
+});
+
+media.addEventListener("loadedmetadata", () => {
+  progress.max = media.duration;
+
+  document.getElementById("duration").innerText =
+    formatTime(media.duration);
+
+  if (playingEpisodes[playingEpisodeIndex]) {
+    playingEpisodes[playingEpisodeIndex].duration = formatTime(media.duration);
+    if (currentActor === playingActor) renderEpisodes();
+  }
+});
+
+progress.addEventListener("input", () => {
+  media.currentTime = progress.value;
+});
+
+volume.addEventListener("input", () => {
+  const val = Number(volume.value);
+  media.volume = val;
+  localStorage.setItem('hamigua_volume', val);
+  // Automatically unmute if the user adjusts the slider to a value above 0
+  if (val > 0 && media.muted) {
+    media.muted = false;
+  }
+});
+
+function showContextMenu(e, handle) {
+  e.preventDefault();
+  const menu = document.getElementById("contextMenu");
+  menu.classList.remove("hidden");
+  menu.style.left = `${e.clientX}px`;
+  menu.style.top = `${e.clientY}px`;
+  menu.dataset.handle = handle;
+  lucide.createIcons();
+}
+
+function removeSelectedShow() {
+  const menu = document.getElementById("contextMenu");
+  const handle = menu.dataset.handle;
+  if (!handle) return;
+  featuredShows = featuredShows.filter(h => h !== handle);
+  localStorage.setItem('hamigua_featured_shows', JSON.stringify(featuredShows));
+  shows = shows.filter(s => s.handle !== handle);
+  renderShows();
+}
+
+function resetToDefaultShows() {
+  const banner = document.getElementById("resetBanner");
+  if (banner.classList.contains("hidden")) {
+    banner.classList.remove("hidden");
+    document.body.classList.add("banner-open");
+  } else {
+    closeResetBanner();
+  }
+}
+
+function closeResetBanner() {
+  document.getElementById("resetBanner").classList.add("hidden");
+  document.body.classList.remove("banner-open");
+}
+
+function confirmReset() {
+  localStorage.removeItem('hamigua_featured_shows');
+  featuredShows = [...DEFAULT_SHOWS];
+
+  // Stop active playback and clear HLS resources
+  if (window.hlsInstance) {
+    window.hlsInstance.destroy();
+    window.hlsInstance = null;
+  }
+  media.pause();
+  media.src = "";
+
+  // Reset playback state tracking
+  playingActor = "";
+  playingEpisodeIndex = -1;
+  playingEpisodes = [];
+  current = -1;
+
+  // Reset bottom player UI to initial state
+  document.getElementById("miniImage").src = "";
+  document.getElementById("miniTitle").innerText = "Choose an episode to play";
+  document.getElementById("miniHandle").innerHTML = "";
+  document.getElementById("currentTime").innerText = "0:00";
+  document.getElementById("duration").innerText = "0:00";
+  progress.value = 0;
+
+  // Reset play/pause button icon
+  document.getElementById("playPauseBtn").innerHTML = '<i data-lucide="play"></i>';
+  lucide.createIcons();
+
+  loadShows();
+  closeResetBanner();
+  goHome();
+}
+
+window.addEventListener("click", () => {
+  document.getElementById("contextMenu").classList.add("hidden");
+  document.getElementById("sleepMenu").classList.add("hidden");
+});
+
+// Keyboard Shortcuts
+window.addEventListener("keydown", (e) => {
+  // Ignore shortcuts if the user is typing in the search/add input
+  if (e.target.tagName === "INPUT") return;
+
+  switch (e.key.toLowerCase()) {
+    case " ":
+      e.preventDefault();
+      togglePlay();
+      break;
+    case "k":
+      togglePlay();
+      break;
+    case "f":
+      toggleFullScreen();
+      break;
+    case "m":
+      media.muted = !media.muted;
+      break;
+    case "arrowright":
+      media.currentTime = Math.min(media.duration, media.currentTime + 10);
+      break;
+    case "arrowleft":
+      media.currentTime = Math.max(0, media.currentTime - 10);
+      break;
+  }
+});
+
+// Infinite Scroll Listener
+document.getElementById("episodes").addEventListener("scroll", (e) => {
+  const el = e.target;
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 50) {
+    fetchMoreEpisodes();
+  }
+});
+
+loadShows();
+lucide.createIcons();
+</script>
+
+</body>
+</html>
